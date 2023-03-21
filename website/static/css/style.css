@@ -1,0 +1,170 @@
+body {
+/* background-color: #0A192F; */
+/* background-color: #071e5a; */
+background-color: #e6dbd1;
+font-family: Arial, sans-serif;
+}
+
+.plot-container {
+background-color: #172A45;
+border-radius: 5px;
+padding: 10px;
+box-shadow: 0px 0px 5px 2px rgba(0,0,0,0.2);
+margin: 0px;
+width: 100%;
+}
+
+
+
+#plot {
+  
+  width: 100%; /* set the width to 100% to fit the container */
+}
+
+#plot_json_smoothed {
+  
+  width: 100%; /* set the width to 100% to fit the container */
+}
+
+#plot_json_posteriors {
+  
+  width: 100%; /* set the width to 100% to fit the container */
+}
+
+
+
+
+
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1em 0;
+  background-color: #f2f2f2;
+}
+
+.table th,
+.table td {
+  text-align: center;
+  padding: 0.5em;
+}
+
+.table th {
+  background-color: #172A45;
+  color: white;
+}
+
+.table td {
+  background-color: white;
+}
+
+
+
+/* .form-group label {
+    color: white;
+}
+
+h1 {
+    color: white;
+} */
+
+/* .footer {
+    background-color: #343a40;
+} */
+
+
+
+
+.flex-container {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.flex-container .flex-row {
+    width: 600px;
+    width: 100%;
+    margin: 5px;
+}
+
+.flex-row-box {
+    width: 600px;
+    margin: 5px;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@media only screen and (min-width: 720px) {
+    #container #main-block .flex-container .flex-row {
+        width:calc(100% / 2)
+    }
+}
+
+@media only screen and (min-width: 1080px) {
+    #container #main-block .flex-container .flex-row {
+        width:calc(100% / 3)
+    }
+}
+
+@media only screen and (min-width: 1080px) {
+    #container #main-block .flex-container .flex-row.t02 {
+        width:calc((100% / 3) * 2)
+    }
+}
+
+@media only screen and (min-width: 720px) {
+    #container #main-block .flex-container .flex-row.t03 {
+        width:100%
+    }
+}
+
+@media only screen and (min-width: 1080px) {
+    #container #main-block .flex-container .flex-row.t03 {
+        width:calc(100% / 2)
+    }
+}
+
+@media only screen and (min-width: 720px) {
+    #container #main-block .flex-container .flex-row.t12 {
+        width:100%!important
+    }
+}
+
+@media only screen and (min-width: 1080px) {
+    #container #main-block .flex-container .flex-row.t12 {
+        width:100%!important
+    }
+}
+
+
+
+
+
+
+nav {
+    background-color: #172A45;
+}
+
+
+#go-button {
+    background-color: white;
+}

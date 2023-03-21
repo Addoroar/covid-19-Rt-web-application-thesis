@@ -1,0 +1,54 @@
+{% extends "base.html" %} {% block title %}Form{% endblock %}
+{% block content %}
+<!doctype html>
+<html>
+    <head>
+        <title>Form Page</title>
+    </head>
+    <body>
+
+        <div class="container-fluid" style="margin: 20px">
+            <form action="{{ url_for("plot_rt.plot_data")}}" method="post" class="form-inline container-fluid">
+                
+                <div class="form-group">
+                    <label style="margin: 0 5px 0 5px">Rt for:</label>
+                    <div class="col-xs-5">
+                        <select name="fstate" data-live-search="true" id="fstate" class="form-control selectpicker" title="State"> 
+                            {% for row in states_list %}
+                            <option>{{row}}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            
+                <div class="form-group">
+                    <div class="col-xs-5">
+                        <div class="form-group">
+                            <label style="margin: 0 5px 0 5px">From:</label>
+                            <div class="input-group date" id="datetimepicker7" data-target-input="nearest">
+                                <input type="text" class="form-control datetimepicker-input" name="dfrom" data-toggle="datetimepicker" data-target="#datetimepicker7" placeholder="YYYY-MM-DD"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="col-xs-5">
+                        <div class="form-group">
+                            <label style="margin: 0 5px 0 5px">To:</label>
+                            <div class="input-group date" id="datetimepicker8" data-target-input="nearest">
+                                <input type="text" class="form-control datetimepicker-input" name="dto" data-toggle="datetimepicker" data-target="#datetimepicker8" placeholder="YYYY-MM-DD"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                <div class="form-group"><div class="col-sm-offset-2 col-sm-5"><button type="submit" class="btn btn-default" id="go-button" style="border: 1px solid grey; opacity: 50%">Go</button></div></div>
+            </form>
+        </div>
+        
+        
+    </body>
+</html>
+{% endblock %}
