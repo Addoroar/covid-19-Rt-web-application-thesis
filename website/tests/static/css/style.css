@@ -1,0 +1,39 @@
+body {
+background-color: #0A192F;
+font-family: Arial, sans-serif;
+}
+
+#plot {
+height: 500px;
+}
+
+.plot-container {
+background-color: #172A45;
+border-radius: 5px;
+padding: 20px;
+box-shadow: 0px 0px 5px 2px rgba(0,0,0,0.2);
+}
+
+.plot-title {
+color: #FFFFFF;
+font-size: 24px;
+margin-bottom: 20px;
+}
+
+.plot-axis-title {
+color: #FFFFFF;
+font-size: 18px;
+}
+
+.plot-axis-tick {
+color: #FFFFFF;
+}
+
+.plot-marker {
+color: #FFFFFF;
+}
+
+.plot-container {
+max-width: 800px;
+margin: 0 auto;
+}
