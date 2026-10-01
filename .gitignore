@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+website/static/csv/*.csv
+.DS_Store

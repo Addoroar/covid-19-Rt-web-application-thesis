@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Plot{% endblock %}
+{% block content %}
+
+<form action="{{ url_for('plot_rt.plot_data') }}" method="post" class="card control-panel">
+  <div class="field">
+    <label for="fstate">Rt for</label>
+    <select name="fstate" id="fstate">
+      {% for row in states_list %}
+      <option {% if row == session.get('form_state') %}selected{% endif %}>{{ row }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="field">
+    <label for="dfrom">From</label>
+    <input type="date" name="dfrom" id="dfrom" value="{{ date_from }}" min="2021-01-01" />
+  </div>
+
+  <div class="field">
+    <label for="dto">To</label>
+    <input type="date" name="dto" id="dto" value="{{ date_to }}" />
+  </div>
+
+  <button type="submit" class="btn">Go</button>
+</form>
+
+<div class="chart-grid">
+  <div class="card chart-card">
+    <div id="plot"></div>
+  </div>
+  <div class="card chart-card">
+    <div id="plot_json_smoothed"></div>
+  </div>
+  <div class="card chart-card">
+    <div id="plot_json_posteriors"></div>
+  </div>
+  <div class="card chart-card">
+    <div id="plot_json_bar"></div>
+  </div>
+</div>
+
+<div class="card table-card">
+  <div class="table-scroll">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>ML Rt</th>
+          <th>Low 95</th>
+          <th>High 95</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for index, row in html_table.iterrows() %}
+        <tr>
+          <td>{{ index }}</td>
+          <td>{{ row['ML_Rt']|round(2) }}</td>
+          <td>{{ row['Low_95']|round(2) }}</td>
+          <td>{{ row['High_95']|round(2) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script>
+  var plot = {{ plot|safe }};
+  Plotly.newPlot('plot', plot.data, plot.layout, {responsive: true});
+
+  var plot_json_smoothed = {{ plot_json_smoothed|safe }};
+  Plotly.newPlot('plot_json_smoothed', plot_json_smoothed.data, plot_json_smoothed.layout, {responsive: true});
+
+  var plot_json_posteriors = {{ plot_json_posteriors|safe }};
+  Plotly.newPlot('plot_json_posteriors', plot_json_posteriors.data, plot_json_posteriors.layout, {responsive: true});
+
+  var plot_json_bar = {{ plot_json_bar|safe }};
+  Plotly.newPlot('plot_json_bar', plot_json_bar.data, plot_json_bar.layout, {responsive: true});
+</script>
+{% endblock %}

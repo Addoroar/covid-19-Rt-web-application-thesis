@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}About{% endblock %}
+{% block content %}
+
+<div class="hero">
+  <h1>About this project</h1>
+  <p>Bayesian estimation of the COVID-19 effective reproduction number (Rt) across Greek regions.</p>
+</div>
+
+<iframe class="pdf-frame" src="{{ url_for('views.pdf') }}" title="Thesis paper"></iframe>
+
+{% endblock %}

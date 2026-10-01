@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}{% endblock %} · Rt Greece</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  </head>
+  <body>
+    <nav class="site-nav">
+      <div class="page">
+        <a class="brand" href="/">Rt&nbsp;Greece</a>
+        <div class="nav-links">
+          <a href="/">Home</a>
+          <a href="/form">Plot</a>
+          <a href="/about">About</a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="page">{% block content %}{% endblock %}</div>
+
+    <div class="page">
+      <p class="site-footer">Thesis Project by Tilemachos Kostoulis &#169; &middot; Department of Financial &amp; Management Engineering, University of the Aegean, Chios</p>
+    </div>
+
+    {% block scripts %}{% endblock %}
+  </body>
+</html>
