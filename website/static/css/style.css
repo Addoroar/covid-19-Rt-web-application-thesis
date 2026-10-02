@@ -243,8 +243,9 @@ a:hover {
   overflow: hidden;
 }
 
-.chart-card .js-plotly-plot {
-  width: 100%;
+.chart-card canvas {
+  width: 100% !important;
+  height: 420px !important;
 }
 
 /* ===== Table ===== */

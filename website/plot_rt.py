@@ -2,8 +2,6 @@ import json
 
 import numpy as np
 import pandas as pd
-import plotly
-import plotly.graph_objs as go
 from flask import Blueprint, render_template, request, session, url_for
 from scipy import stats as sps
 
@@ -25,28 +23,6 @@ STATUS_GOOD = "#0ca30c"
 STATUS_WARNING = "#fab219"
 STATUS_SERIOUS = "#ec835a"
 STATUS_CRITICAL = "#d03b3b"
-
-CHART_FONT = dict(family="system-ui, -apple-system, Segoe UI, sans-serif", color=TEXT_SECONDARY)
-
-
-def themed_layout(**overrides):
-    layout = dict(
-        paper_bgcolor=SURFACE,
-        plot_bgcolor=SURFACE,
-        font=CHART_FONT,
-        title=dict(font=dict(color=TEXT_PRIMARY, size=16)),
-        legend=dict(font=dict(color=TEXT_SECONDARY)),
-        margin=dict(t=48, r=24, b=48, l=56),
-        xaxis=dict(gridcolor=GRID, zerolinecolor=GRID, linecolor=GRID),
-        yaxis=dict(gridcolor=GRID, zerolinecolor=GRID, linecolor=GRID),
-    )
-    for key, value in overrides.items():
-        if isinstance(value, dict) and key in layout and isinstance(layout[key], dict):
-            layout[key] = {**layout[key], **value}
-        else:
-            layout[key] = value
-    return go.Layout(**layout)
-
 
 plot_rt = Blueprint('plot_rt', __name__)
 
@@ -85,27 +61,14 @@ def plot_data():
     df = df[df['cases'] > 60000]
     df = df[df['cases'] < 700000]
 
-    x = df['region_en']
-    y = df['cases']
-
-    # Create the bar chart
-    trace = go.Bar(x=x, y=y, marker=dict(color=SERIES_1))
-
-    layout = themed_layout(
-        title='Total Cases by Region above 60k',
-        xaxis=dict(
-            title='Region',
-            tickangle=90,
-            automargin=True
-        ),
-        yaxis=dict(
-            title='Total Cases'
-        ),
-        bargap=0.15
-    )
-
-    fig = go.Figure(data=[trace], layout=layout)
-    plot_json_bar = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+    # Plain data payload for the Chart.js-rendered bar chart (see plot.html)
+    bar_chart_data = {
+        'labels': df['region_en'].tolist(),
+        'cases': df['cases'].tolist(),
+        'color': SERIES_1,
+        'title': 'Total Cases by Region above 60k',
+    }
+    bar_chart_json = json.dumps(bar_chart_data)
 
     region = request.args.get('region')
 
@@ -159,33 +122,15 @@ def plot_data():
     y_smoothed = smoothed
     y_original = original
 
-    # RT Plot
-    trace_smooth = go.Scatter(
-        x=x,
-        y=y_smoothed,
-        mode='lines',
-        name='Smoothed',
-        line=dict(color=SERIES_1, width=2)
-    )
-
-    trace_original = go.Scatter(
-        x=x,
-        y=y_original,
-        mode='lines',
-        line=dict(dash='dot', color=TEXT_SECONDARY, width=1),
-        name='Actual'
-    )
-
-    # Create the layout
-    layout = themed_layout(
-        title=f'{state_name} - New cases per day',
-        xaxis=dict(title='Date', type='date'),
-        yaxis=dict(title='Number of cases per day')
-    )
-
-    # Create the figure
-    fig = go.Figure(data=[trace_original, trace_smooth], layout=layout)
-    plot_json_smoothed = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+    # Plain data payload for the Chart.js-rendered cases chart (see plot.html)
+    cases_chart_data = {
+        'labels': [d.strftime('%Y-%m-%d') for d in x],
+        'actual': [None if pd.isna(v) else round(v, 2) for v in y_original],
+        'smoothed': [None if pd.isna(v) else round(v, 2) for v in y_smoothed],
+        'color': SERIES_1,
+        'title': f'{state_name} - New cases per day',
+    }
+    cases_chart_json = json.dumps(cases_chart_data)
 
     def get_posteriors(sr, sigma=0.15):
         # (1) Calculate Lambda
@@ -237,20 +182,19 @@ def plot_data():
     # Note that we're fixing sigma to a value just for the example
     posteriors = get_posteriors(smoothed, sigma=.25)
 
-    # Plot for posteriors
-    fig = go.Figure()
-
-    # Create a line plot for each column of the DataFrame
-    for col in posteriors.columns:
-        fig.add_trace(go.Scatter(x=posteriors.index, y=posteriors[col], name=str(col)))
-
-    fig.update_layout(themed_layout(
-        title=f'{state_name} - Posterior Distributions',
-        xaxis=dict(title='Rt', range=[0, 4]),
-        yaxis=dict(title='Likelihood')
-    ))
-
-    plot_json_posteriors = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+    # Plain data payload for the Chart.js-rendered posteriors chart (see plot.html)
+    # Restrict to Rt in [0, 4] (matches the original axis range) and downsample
+    # the 1201-point R_T_RANGE so each of the per-day lines stays cheap to draw.
+    posteriors_view = posteriors.loc[(posteriors.index >= 0) & (posteriors.index <= 4)].iloc[::4]
+    posteriors_chart_data = {
+        'labels': [round(v, 2) for v in posteriors_view.index],
+        'series': [
+            {'name': str(col), 'data': [round(v, 5) for v in posteriors_view[col]]}
+            for col in posteriors_view.columns
+        ],
+        'title': f'{state_name} - Posterior Distributions',
+    }
+    posteriors_chart_json = json.dumps(posteriors_chart_data)
 
     def highest_density_interval(pmf, p=.95):
         # If we pass a DataFrame, just call this recursively on the columns
@@ -310,72 +254,29 @@ def plot_data():
         else:
             colors.append(STATUS_GOOD)
 
-    # RT Plot
-    trace = go.Scatter(
-        x=x,
-        y=y,
-        mode='lines+markers',
-        line=dict(color=TEXT_SECONDARY, width=1),
-        name='Most Likely Rt',
-        marker=dict(
-            color=colors,
-            size=8,
-            line=dict(width=2, color=SURFACE)
-        )
-    )
+    y_axis_max = max(y.max(), upper_bound.replace(0, np.nan).quantile(0.95)) + 0.5
 
-    # Add upper bound data of the HDI
-    u_bound = go.Scatter(
-        x=x,
-        y=upper_bound,
-        mode='lines',
-        name='Upper Bound HDI',
-        line=dict(color='rgba(57, 135, 229, 0.15)', width=1),
-        fillcolor='rgba(57, 135, 229, 0.12)',
-        fill='tonexty'
-    )
-
-    # Add lower bound data of the HDI
-    l_bound = go.Scatter(
-        x=x,
-        y=lower_bound,
-        mode='lines',
-        name='Lower Bound HDI',
-        line=dict(color='rgba(57, 135, 229, 0.15)', width=1),
-        fillcolor='rgba(57, 135, 229, 0.12)',
-        fill='tonexty'
-    )
-
-    # Add baseline of Rt = 1 for reference
-    hline = go.Scatter(
-        x=[min(x), max(x)],
-        y=[1, 1],
-        mode='lines',
-        line=dict(color=TEXT_SECONDARY, dash='dash', width=1),
-        name='Rt = 1'
-    )
-
-    # Create the layout
-    layout = themed_layout(
-        title=f'{state_name} - Most Likely Rt per day',
-        xaxis=dict(title='Date', type='date'),
-        yaxis=dict(title='Rt', range=[0, max(y) + 0.5]),
-        autosize=True
-    )
-
-    # Create the figure
-    fig = go.Figure(data=[trace, u_bound, l_bound, hline], layout=layout)
-    plot_json = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+    # Plain data payload for the Chart.js-rendered Rt chart (see plot.html)
+    rt_chart_data = {
+        'labels': [d.strftime('%Y-%m-%d') for d in x],
+        'ml_rt': [round(v, 2) for v in y],
+        'low_95': [round(v, 2) for v in lower_bound],
+        'high_95': [round(v, 2) for v in upper_bound],
+        'colors': colors,
+        'y_max': round(y_axis_max, 2),
+        'title': f'{state_name} - Most Likely Rt per day',
+    }
+    rt_chart_json = json.dumps(rt_chart_data)
 
     return render_template(
         'plot.html',
-        plot=plot_json,
+        rt_chart_data=rt_chart_json,
         date_from=date_from,
         date_to=date_to,
         states_list=states_list,
         css=url_for('static', filename='css/style.css'),
         html_table=result,
-        plot_json_smoothed=plot_json_smoothed,
-        plot_json_posteriors=plot_json_posteriors,
-        plot_json_bar=plot_json_bar
+        cases_chart_data=cases_chart_json,
+        posteriors_chart_data=posteriors_chart_json,
+        bar_chart_data=bar_chart_json
     )

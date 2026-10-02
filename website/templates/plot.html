@@ -27,16 +27,16 @@
 
 <div class="chart-grid">
   <div class="card chart-card">
-    <div id="plot"></div>
+    <canvas id="rt_chart"></canvas>
   </div>
   <div class="card chart-card">
-    <div id="plot_json_smoothed"></div>
+    <canvas id="cases_chart"></canvas>
   </div>
   <div class="card chart-card">
-    <div id="plot_json_posteriors"></div>
+    <canvas id="posteriors_chart"></canvas>
   </div>
   <div class="card chart-card">
-    <div id="plot_json_bar"></div>
+    <canvas id="bar_chart"></canvas>
   </div>
 </div>
 
@@ -68,18 +68,277 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script>
-  var plot = {{ plot|safe }};
-  Plotly.newPlot('plot', plot.data, plot.layout, {responsive: true});
+  var rtData = {{ rt_chart_data|safe }};
 
-  var plot_json_smoothed = {{ plot_json_smoothed|safe }};
-  Plotly.newPlot('plot_json_smoothed', plot_json_smoothed.data, plot_json_smoothed.layout, {responsive: true});
+  var rtCtx = document.getElementById('rt_chart').getContext('2d');
+  new Chart(rtCtx, {
+    type: 'line',
+    data: {
+      labels: rtData.labels,
+      datasets: [
+        {
+          label: 'Lower bound (95% HDI)',
+          data: rtData.low_95,
+          borderWidth: 0,
+          pointRadius: 0,
+          fill: false,
+          order: 3,
+          tooltip: { enabled: false }
+        },
+        {
+          label: '95% HDI',
+          data: rtData.high_95,
+          borderWidth: 0,
+          pointRadius: 0,
+          backgroundColor: 'rgba(57, 135, 229, 0.15)',
+          fill: '-1',
+          order: 2
+        },
+        {
+          label: 'Rt = 1',
+          data: rtData.labels.map(function () { return 1; }),
+          borderColor: '#c3c2b7',
+          borderWidth: 1,
+          borderDash: [6, 4],
+          pointRadius: 0,
+          fill: false,
+          order: 1
+        },
+        {
+          label: 'Most Likely Rt',
+          data: rtData.ml_rt,
+          borderColor: '#c3c2b7',
+          borderWidth: 1,
+          pointBackgroundColor: rtData.colors,
+          pointBorderColor: '#1a1a19',
+          pointBorderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          fill: false,
+          order: 0
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        title: {
+          display: true,
+          text: rtData.title,
+          color: '#ffffff',
+          font: { size: 16 }
+        },
+        legend: {
+          labels: {
+            color: '#c3c2b7',
+            filter: function (item) {
+              return item.text !== 'Lower bound (95% HDI)';
+            }
+          }
+        },
+        tooltip: {
+          callbacks: {
+            title: function (items) {
+              return items[0].label;
+            },
+            label: function (item) {
+              if (item.dataset.label === 'Most Likely Rt') {
+                var i = item.dataIndex;
+                return [
+                  'Most likely Rt: ' + rtData.ml_rt[i],
+                  '95% HDI: ' + rtData.low_95[i] + ' – ' + rtData.high_95[i]
+                ];
+              }
+              if (item.dataset.label === 'Rt = 1') {
+                return null;
+              }
+              return item.dataset.label + ': ' + item.formattedValue;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: '#2c2c2a' },
+          ticks: { color: '#c3c2b7' },
+          title: { display: true, text: 'Date', color: '#c3c2b7' }
+        },
+        y: {
+          min: 0,
+          max: rtData.y_max,
+          grid: { color: '#2c2c2a' },
+          ticks: { color: '#c3c2b7' },
+          title: { display: true, text: 'Rt', color: '#c3c2b7' }
+        }
+      }
+    }
+  });
 
-  var plot_json_posteriors = {{ plot_json_posteriors|safe }};
-  Plotly.newPlot('plot_json_posteriors', plot_json_posteriors.data, plot_json_posteriors.layout, {responsive: true});
+  var casesData = {{ cases_chart_data|safe }};
 
-  var plot_json_bar = {{ plot_json_bar|safe }};
-  Plotly.newPlot('plot_json_bar', plot_json_bar.data, plot_json_bar.layout, {responsive: true});
+  var casesCtx = document.getElementById('cases_chart').getContext('2d');
+  new Chart(casesCtx, {
+    type: 'line',
+    data: {
+      labels: casesData.labels,
+      datasets: [
+        {
+          label: 'Actual',
+          data: casesData.actual,
+          borderColor: '#c3c2b7',
+          borderWidth: 1,
+          borderDash: [3, 3],
+          pointRadius: 0,
+          fill: false
+        },
+        {
+          label: 'Smoothed',
+          data: casesData.smoothed,
+          borderColor: casesData.color,
+          borderWidth: 2,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          fill: false
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        title: {
+          display: true,
+          text: casesData.title,
+          color: '#ffffff',
+          font: { size: 16 }
+        },
+        legend: { labels: { color: '#c3c2b7' } },
+        tooltip: {
+          callbacks: {
+            title: function (items) { return items[0].label; }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: '#2c2c2a' },
+          ticks: { color: '#c3c2b7' },
+          title: { display: true, text: 'Date', color: '#c3c2b7' }
+        },
+        y: {
+          grid: { color: '#2c2c2a' },
+          ticks: { color: '#c3c2b7' },
+          title: { display: true, text: 'Number of cases per day', color: '#c3c2b7' }
+        }
+      }
+    }
+  });
+
+  var posteriorsData = {{ posteriors_chart_data|safe }};
+
+  var posteriorsPalette = ['#3987e5', '#199e70', '#fab219', '#ec835a', '#d03b3b', '#9b6bdb'];
+  var posteriorsCtx = document.getElementById('posteriors_chart').getContext('2d');
+  new Chart(posteriorsCtx, {
+    type: 'line',
+    data: {
+      labels: posteriorsData.labels,
+      datasets: posteriorsData.series.map(function (s, i) {
+        return {
+          label: s.name,
+          data: s.data,
+          borderColor: posteriorsPalette[i % posteriorsPalette.length],
+          borderWidth: 1,
+          pointRadius: 0,
+          pointHitRadius: 6,
+          fill: false
+        };
+      })
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        title: {
+          display: true,
+          text: posteriorsData.title,
+          color: '#ffffff',
+          font: { size: 16 }
+        },
+        legend: { display: false },
+        tooltip: {
+          itemSort: function (a, b) { return b.raw - a.raw; },
+          filter: function (item) { return item.raw > 0.001; },
+          callbacks: {
+            title: function (items) { return 'Rt = ' + items[0].label; }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: '#2c2c2a' },
+          ticks: { color: '#c3c2b7', maxTicksLimit: 10 },
+          title: { display: true, text: 'Rt', color: '#c3c2b7' }
+        },
+        y: {
+          grid: { color: '#2c2c2a' },
+          ticks: { color: '#c3c2b7' },
+          title: { display: true, text: 'Likelihood', color: '#c3c2b7' }
+        }
+      }
+    }
+  });
+
+  var barData = {{ bar_chart_data|safe }};
+
+  var barCtx = document.getElementById('bar_chart').getContext('2d');
+  new Chart(barCtx, {
+    type: 'bar',
+    data: {
+      labels: barData.labels,
+      datasets: [
+        {
+          label: 'Total Cases',
+          data: barData.cases,
+          backgroundColor: barData.color
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        title: {
+          display: true,
+          text: barData.title,
+          color: '#ffffff',
+          font: { size: 16 }
+        },
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: function (items) { return items[0].label; }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: '#2c2c2a' },
+          ticks: { color: '#c3c2b7', maxRotation: 90, minRotation: 90 },
+          title: { display: true, text: 'Region', color: '#c3c2b7' }
+        },
+        y: {
+          grid: { color: '#2c2c2a' },
+          ticks: { color: '#c3c2b7' },
+          title: { display: true, text: 'Total Cases', color: '#c3c2b7' }
+        }
+      }
+    }
+  });
 </script>
 {% endblock %}
